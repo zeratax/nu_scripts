@@ -1,7 +1,6 @@
 # Written by Genna
 
 # Windows Package Manager
-
 def "nu-complete winget install locale" [] {
     [
         "ar-SA","bn-BD","bn-IN","cs-CZ","da-DK","de-AT","de-CH","de-DE","el-GR",
@@ -28,11 +27,11 @@ def "nu-complete winget source type" [] {
 def "nu-complete winget flagify" [name: string, value: any, --short(-s)] {
   let flag_start = if $short { '-' } else { '--' }
   if $value == null or $value == false {
-    ""
+    null
   } else if $value == true {
     $"($flag_start)($name)"
   } else {
-    $"($flag_start)($name) ($value)"
+    [ $"($flag_start)($name)", $value ]
   }
 }
 
@@ -133,6 +132,7 @@ export extern winget [
     --help(-?), # Display the help for this command
 ]
 
+
 # Installs the given package
 export extern "winget install" [
     query?: string@"nu-complete winget install name",
@@ -158,7 +158,7 @@ export extern "winget install" [
     --help(-?) # Display the help for this command
 ]
 
-def "winget show" [
+export def "winget show" [
     pos_query?: string,
     --query(-q): string, # The query used to search for a package
     --id: string, # Filter results by id
@@ -183,8 +183,8 @@ def "winget show" [
 ] {
     let flagify = { |name, value| nu-complete winget flagify $name $value }
 
-    let command = ([
-        "winget show"
+    let arguments = ([
+        "show"
         $pos_query,
         (do $flagify query $query)
         (do $flagify id $id)
@@ -205,12 +205,12 @@ def "winget show" [
         (do $flagify header $header)
         (do $flagify accept_source_agreements $accept_source_agreements)
         (do $flagify help $help)
-    ] | str join ' ')
+    ] )
 
     if $raw or $help {
-        ^$command
+        ^winget $arguments
     } else {
-        let output = (^$command | lines)
+        let output = (^winget $arguments | lines)
         if ($output | first) =~ "Multiple packages found matching input criteria." {
             $"(ansi yellow)($output | first | str trim)(ansi reset)"
             nu-complete winget parse table ($output | skip 1) | select name id source
@@ -240,7 +240,7 @@ export extern "winget source add" [
 ]
 
 # List current sources
-def "winget source list" [
+export def "winget source list" [
     pos_name?: string, # Name of the source
     --name(-n): string, # Name of the source
     --raw, # Output the raw CLI output instead of structured data
@@ -248,17 +248,18 @@ def "winget source list" [
 ] {
     let flagify = { |name, value| nu-complete winget flagify $name $value }
 
-    let command = ([
-        "winget source list"
+    let arguments = ([
+        "source"
+        "list"
         $pos_name
         (do $flagify name $name)
         (do $flagify help $help)
-    ] | str join ' ')
+    ] | flatten | compact )
 
     if $raw or $help {
-        ^$command
+        ^winget $arguments
     } else {
-        let output = (^$command | lines)
+        let output = (^winget $arguments | lines)
         if ($output | length) == 1 {
             $"(ansi light_red)($output | first)(ansi reset)"
         } else {
@@ -293,7 +294,7 @@ export extern "winget source export" [
 ]
 
 # Find and show basic info of packages
-def "winget search" [
+export def "winget search" [
     pos_query?: string,
     --query(-q): string, # The query used to search for a package
     --id: string, # Filter results by id
@@ -311,56 +312,8 @@ def "winget search" [
 ] {
     let flagify = { |name, value| nu-complete winget flagify $name $value }
 
-    let command = ([
-        "winget search"
-        $pos_query
-        (do $flagify query $query)
-        (do $flagify id $id)
-        (do $flagify name $name)
-        (do $flagify moniker $moniker)
-        (do $flagify tag $tag)
-        (do $flagify command $command)
-        (do $flagify source $source)
-        (do $flagify count $count)
-        (do $flagify exact $exact)
-        (do $flagify header $header)
-        (do $flagify accept_source_agreements $accept_source_agreements)
-        (do $flagify help $help)
-    ] | str join ' ')
-
-    if $raw or $help {
-        ^$command
-    } else {
-        let output = (^$command | lines)
-        if ($output | length) == 1 {
-            $"(ansi light_red)($output | first)(ansi reset)"
-        } else {
-            nu-complete winget parse table $output | select name id version source
-        }
-    }
-}
-
-# Display installed packages in a structured way.
-def "winget list" [
-    pos_query?: string,
-    --query(-q): string, # The query used to search for a package
-    --id: string, # Filter results by id
-    --name: string, # Filter results by name
-    --moniker: string, # Filter results by moniker
-    --tag: string, # Filter results by tag
-    --command: string, # Filter results by command
-    --source(-s): string@"nu-complete winget install source", # Find package using the specified source
-    --count(-n): int, # Show no more than specified number of results
-    --exact(-e), # Find package using exact match
-    --header: string, # Optional Windows-Package-Manager REST source HTTP header
-    --accept_source_agreements, # Accept all source agreements during source operations
-    --raw, # Output the raw CLI output instead of structured data
-    --help(-?) # Display the help for this command
-] {
-    let flagify = { |name, value| nu-complete winget flagify $name $value }
-
-    let command = ([
-        "winget list"
+    let arguments = ([
+        "search"
         $pos_query,
         (do $flagify query $query)
         (do $flagify id $id)
@@ -374,12 +327,60 @@ def "winget list" [
         (do $flagify header $header)
         (do $flagify accept_source_agreements $accept_source_agreements)
         (do $flagify help $help)
-    ] | str join ' ')
+    ] | flatten | compact )
+
+    if $raw or $help {
+        ^winget $arguments
+    } else {
+        let output = (^winget $arguments | lines)
+        if ($output | length) == 1 {
+            $"(ansi light_red)($output | first)(ansi reset)"
+        } else {
+            nu-complete winget parse table $output | select name id version source
+        }
+    }
+}
+
+# Display installed packages in a structured way.
+export def "winget list" [
+    pos_query?: string,
+    --query(-q): string, # The query used to search for a package
+    --id: string, # Filter results by id
+    --name: string, # Filter results by name
+    --moniker: string, # Filter results by moniker
+    --tag: string, # Filter results by tag
+    --command: string, # Filter results by command
+    --source(-s): string@"nu-complete winget install source", # Find package using the specified source
+    --count(-n): int, # Show no more than specified number of results
+    --exact(-e), # Find package using exact match
+    --header: string, # Optional Windows-Package-Manager REST source HTTP header
+    --accept_source_agreements, # Accept all source agreements during source operations
+    --raw, # Output the raw CLI output instead of structured data
+    --help(-?) # Display the help for this command
+] {
+    let flagify = { |name, value| nu-complete winget flagify $name $value }
+
+    let arguments = ([
+        "list"
+        $pos_query,
+        (do $flagify query $query)
+        (do $flagify id $id)
+        (do $flagify name $name)
+        (do $flagify moniker $moniker)
+        (do $flagify tag $tag)
+        (do $flagify command $command)
+        (do $flagify source $source)
+        (do $flagify count $count)
+        (do $flagify exact $exact)
+        (do $flagify header $header)
+        (do $flagify accept_source_agreements $accept_source_agreements)
+        (do $flagify help $help)
+    ] | flatten | compact )
 
     if $help or $raw {
-        ^$command
+        ^winget $arguments
     } else {
-        let output = (^$command | lines)
+        let output = (^winget $arguments | lines)
         if ($output | length) == 1 {
             $"(ansi light_red)($output | first)(ansi reset)"
         } else {
