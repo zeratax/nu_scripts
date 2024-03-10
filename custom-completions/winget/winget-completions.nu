@@ -230,9 +230,9 @@ export def "winget show" [
     ] | flatten | compact )
 
     if $raw or $help {
-        ^winget $arguments
+        ^winget ...$arguments
     } else {
-        let completed = (^winget $arguments | complete)
+        let completed = (^winget ...$arguments | complete)
         let output = $completed.stdout | lines
         if ($completed.exit_code != 0) {
             if ($output | first) =~ "Multiple packages found matching input criteria." {
@@ -285,9 +285,9 @@ export def "winget source list" [
     ] | flatten | compact )
 
     if $raw or $help {
-        ^winget $arguments
+        ^winget ...$arguments
     } else {
-        let output = (^winget $arguments | lines)
+        let output = (^winget ...$arguments | lines)
         if ($output | length) == 1 {
             $"(ansi light_red)($output | first)(ansi reset)"
         } else {
@@ -358,9 +358,9 @@ export def "winget search" [
     ] | flatten | compact )
 
     if $raw or $help {
-        ^winget $arguments
+        ^winget ...$arguments
     } else {
-        let completed = (^winget $arguments | complete)
+        let completed = (^winget ...$arguments | complete)
         let output = $completed.stdout | lines
         if ($completed.exit_code != 0) {
             let $err_msg = if ($output | length) >= 3 { 
@@ -412,9 +412,9 @@ export def "winget list" [
     ] | flatten | compact )
 
     if $help or $raw {
-        ^winget $arguments
+        ^winget ...$arguments
     } else {
-        let output = (^winget $arguments | lines)
+        let output = (^winget ...$arguments | lines)
         if ($output | length) == 1 {
             $"(ansi light_red)($output | first)(ansi reset)"
         } else {
